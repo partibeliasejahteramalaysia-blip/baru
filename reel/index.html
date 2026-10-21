@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ms" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/vendor/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Anton"; src: url("assets/fonts/anton-latin-400-normal.woff2") format("woff2"); font-weight: 400; }
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin-600-normal.woff2") format("woff2"); font-weight: 600; }
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin-800-normal.woff2") format("woff2"); font-weight: 800; }
+      :root { --navy: #0b1f4b; --yellow: #ffc72c; --red: #e63946; --white: #ffffff; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+      body { font-family: "Inter", sans-serif; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #000; }
+
+      /* A-roll: one wrapper per cut so each cut gets its own punch-in */
+      .cam { position: absolute; inset: 0; transform-origin: 50% 24%; }
+      .cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      #grade { position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(180deg, rgba(11,31,75,0.35) 0%, rgba(11,31,75,0) 18%, rgba(0,0,0,0) 55%, rgba(5,12,30,0.65) 100%); }
+      #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+
+      /* Top: progress bar + hook tag */
+      #progress { position: absolute; left: 0; top: 0; width: 1080px; height: 10px; background: var(--yellow); transform-origin: 0 50%; }
+      #tag { position: absolute; left: 0; right: 0; top: 96px; display: flex; justify-content: center; }
+      #tag-pill { display: block; padding: 14px 30px; border-radius: 999px; background: var(--red); color: var(--white);
+        font: 800 34px/1 "Inter", sans-serif; letter-spacing: 3px; }
+
+      /* Keyword callouts (chest area, above captions) */
+      #callouts { position: absolute; left: 0; right: 0; top: 1040px; height: 220px; }
+      .co { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-direction: column; align-items: center; opacity: 0; }
+      .co-text { display: block; padding: 10px 34px 4px; font: 400 128px/1.05 "Anton", sans-serif; letter-spacing: 2px;
+        text-transform: uppercase; color: var(--navy); text-align: center; max-width: 1000px; }
+      .co-yellow .co-text { background: var(--yellow); }
+      .co-red .co-text { background: var(--red); color: var(--white); }
+      .co-bar { display: block; width: 260px; height: 12px; margin-bottom: 12px; background: var(--white); transform-origin: 50% 50%; }
+      #co-rakyat .co-text, #co-wadah .co-text, #co-kekuatan .co-text { font-size: 96px; }
+
+      /* Lower third */
+      #lt { position: absolute; left: 60px; top: 1060px; width: 820px; height: 170px; opacity: 0; }
+      #lt-strip { position: absolute; left: 0; top: 0; width: 16px; height: 170px; background: var(--yellow); }
+      #lt-box { position: absolute; left: 16px; top: 0; width: 804px; height: 170px; background: rgba(11,31,75,0.92); padding: 24px 34px; }
+      #lt-kicker { display: block; font: 600 32px/1.2 "Inter", sans-serif; color: var(--yellow); letter-spacing: 2px; }
+      #lt-title { display: block; font: 400 72px/1.15 "Anton", sans-serif; color: var(--white); letter-spacing: 1px; }
+
+      /* Captions */
+      #captions { position: absolute; left: 0; right: 0; top: 1330px; height: 160px; }
+      .cg { position: absolute; left: 40px; right: 40px; top: 0; height: 160px; display: flex; align-items: center; justify-content: center; opacity: 0; }
+      .cg-text { display: block; text-align: center; font: 800 76px/1.1 "Inter", sans-serif; color: var(--white);
+        text-shadow: 0 4px 0 rgba(0,0,0,0.55), 0 0 22px rgba(0,0,0,0.6); -webkit-text-stroke: 2px rgba(0,0,0,0.35); }
+      .cg-text .hl { color: var(--yellow); }
+
+      /* End card */
+      #end { position: absolute; inset: 0; opacity: 0; }
+      #end-bg { position: absolute; inset: 0; background: var(--navy); }
+      #end-stripe-1 { position: absolute; left: 0; top: 700px; width: 1080px; height: 40px; background: var(--red); }
+      #end-stripe-2 { position: absolute; left: 0; top: 1180px; width: 1080px; height: 40px; background: var(--yellow); }
+      #end-title { position: absolute; left: 0; right: 0; top: 790px; text-align: center; font: 400 150px/1.05 "Anton", sans-serif; color: var(--white); }
+      .end-line { display: block; }
+      #end-title .hl { color: var(--yellow); }
+      #end-brand { position: absolute; left: 0; right: 0; top: 1270px; display: flex; justify-content: center; }
+      #end-brand-pill { display: block; padding: 18px 46px; background: var(--yellow); color: var(--navy); font: 400 84px/1 "Anton", sans-serif; letter-spacing: 8px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="29.1" data-width="1080" data-height="1920">
+      <div id="aroll">
+      <div id="cam-h1" class="cam">
+        <video id="v-h1" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="0.0" data-duration="1.98" data-media-start="18.98" data-track-index="0"></video>
+      </div>
+      <div id="cam-h2" class="cam">
+        <video id="v-h2" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="1.98" data-duration="1.14" data-media-start="21.56" data-track-index="0"></video>
+      </div>
+      <div id="cam-a" class="cam">
+        <video id="v-a" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="3.12" data-duration="2.42" data-media-start="1.86" data-track-index="0"></video>
+      </div>
+      <div id="cam-b" class="cam">
+        <video id="v-b" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="5.54" data-duration="2.28" data-media-start="4.92" data-track-index="0"></video>
+      </div>
+      <div id="cam-c" class="cam">
+        <video id="v-c" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="7.82" data-duration="1.66" data-media-start="8.24" data-track-index="0"></video>
+      </div>
+      <div id="cam-d" class="cam">
+        <video id="v-d" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="9.48" data-duration="4.0" data-media-start="10.48" data-track-index="0"></video>
+      </div>
+      <div id="cam-e" class="cam">
+        <video id="v-e" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="13.48" data-duration="1.38" data-media-start="15.04" data-track-index="0"></video>
+      </div>
+      <div id="cam-f" class="cam">
+        <video id="v-f" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="14.86" data-duration="1.66" data-media-start="16.66" data-track-index="0"></video>
+      </div>
+      <div id="cam-g" class="cam">
+        <video id="v-g" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="16.52" data-duration="3.86" data-media-start="23.1" data-track-index="0"></video>
+      </div>
+      <div id="cam-h" class="cam">
+        <video id="v-h" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="20.38" data-duration="1.58" data-media-start="27.48" data-track-index="0"></video>
+      </div>
+      <div id="cam-i" class="cam">
+        <video id="v-i" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="21.96" data-duration="1.42" data-media-start="29.5" data-track-index="0"></video>
+      </div>
+      <div id="cam-j" class="cam">
+        <video id="v-j" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="23.38" data-duration="1.78" data-media-start="31.16" data-track-index="0"></video>
+      </div>
+      <div id="cam-k" class="cam">
+        <video id="v-k" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="25.16" data-duration="0.98" data-media-start="33.18" data-track-index="0"></video>
+      </div>
+      <div id="cam-l" class="cam">
+        <video id="v-l" class="clip" src="raw.mp4" playsinline data-has-audio="true"
+          data-start="26.14" data-duration="0.76" data-media-start="34.5" data-track-index="0"></video>
+      </div>
+      </div>
+      <div id="grade"></div>
+      <div id="flash"></div>
+
+      <div id="progress"></div>
+      <div id="tag"><span id="tag-pill">MESEJ UNTUK BELIA</span></div>
+
+      <div id="lt">
+        <div id="lt-strip"></div>
+        <div id="lt-box"><span id="lt-kicker">BERSAMA</span><span id="lt-title">KEPIMPINAN PRISMA</span></div>
+      </div>
+
+      <div id="callouts">
+        <div id="co-belia" class="co co-yellow"><span class="co-bar"></span><span class="co-text">BELIA</span></div>
+        <div id="co-mari" class="co co-red"><span class="co-bar"></span><span class="co-text">MARI BERSAMA!</span></div>
+        <div id="co-cemerlang" class="co co-yellow"><span class="co-bar"></span><span class="co-text">CEMERLANG</span></div>
+        <div id="co-hak" class="co co-red"><span class="co-bar"></span><span class="co-text">HAK-HAK BELIA</span></div>
+        <div id="co-kekuatan" class="co co-yellow"><span class="co-bar"></span><span class="co-text">KEKUATAN PRISMA</span></div>
+        <div id="co-wadah" class="co co-red"><span class="co-bar"></span><span class="co-text">WADAH PERJUANGAN</span></div>
+        <div id="co-rakyat" class="co co-yellow"><span class="co-bar"></span><span class="co-text">SELURUH RAKYAT MALAYSIA</span></div>
+        <div id="co-khusus" class="co co-red"><span class="co-bar"></span><span class="co-text">KHUSUSNYA BELIA</span></div>
+      </div>
+
+      <div id="captions">
+        <div id="cg-0" class="cg"><span class="cg-text">Kepada para <span class="hl">belia</span></span></div>
+        <div id="cg-1" class="cg"><span class="cg-text">di luar sana,</span></div>
+        <div id="cg-2" class="cg"><span class="cg-text">marilah</span></div>
+        <div id="cg-3" class="cg"><span class="cg-text">kita <span class="hl">bersama-sama</span></span></div>
+        <div id="cg-4" class="cg"><span class="cg-text">Assalamualaikum</span></div>
+        <div id="cg-5" class="cg"><span class="cg-text">warahmatullahi</span></div>
+        <div id="cg-6" class="cg"><span class="cg-text">wabarakatuh</span></div>
+        <div id="cg-7" class="cg"><span class="cg-text">Hari ini saya</span></div>
+        <div id="cg-8" class="cg"><span class="cg-text">berkesempatan bertemu</span></div>
+        <div id="cg-9" class="cg"><span class="cg-text">dengan</span></div>
+        <div id="cg-10" class="cg"><span class="cg-text">barisan kepimpinan</span></div>
+        <div id="cg-11" class="cg"><span class="cg-text"><span class="hl">PRISMA</span></span></div>
+        <div id="cg-12" class="cg"><span class="cg-text">Dan saya mendoakan</span></div>
+        <div id="cg-13" class="cg"><span class="cg-text">agar <span class="hl">PRISMA</span></span></div>
+        <div id="cg-14" class="cg"><span class="cg-text">akan terus <span class="hl">cemerlang</span></span></div>
+        <div id="cg-15" class="cg"><span class="cg-text">dalam memperjuangkan</span></div>
+        <div id="cg-16" class="cg"><span class="cg-text">akan <span class="hl">hak-hak belia</span></span></div>
+        <div id="cg-17" class="cg"><span class="cg-text">dan juga negara</span></div>
+        <div id="cg-18" class="cg"><span class="cg-text">secara keseluruhannya</span></div>
+        <div id="cg-19" class="cg"><span class="cg-text">Dan saya mendoakan</span></div>
+        <div id="cg-20" class="cg"><span class="cg-text">kalian akan menjadi</span></div>
+        <div id="cg-21" class="cg"><span class="cg-text">sebahagian daripada</span></div>
+        <div id="cg-22" class="cg"><span class="cg-text">kekuatan <span class="hl">PRISMA</span></span></div>
+        <div id="cg-23" class="cg"><span class="cg-text">dalam membawa</span></div>
+        <div id="cg-24" class="cg"><span class="cg-text">wadah <span class="hl">perjuangan</span></span></div>
+        <div id="cg-25" class="cg"><span class="cg-text">yang akan</span></div>
+        <div id="cg-26" class="cg"><span class="cg-text">membela <span class="hl">nasib</span></span></div>
+        <div id="cg-27" class="cg"><span class="cg-text">seluruh <span class="hl">rakyat Malaysia</span>,</span></div>
+        <div id="cg-28" class="cg"><span class="cg-text">khususnya</span></div>
+        <div id="cg-29" class="cg"><span class="cg-text"><span class="hl">belia</span> di Malaysia.</span></div>
+        <div id="cg-30" class="cg"><span class="cg-text">Salam <span class="hl">perjuangan</span>.</span></div>
+      </div>
+
+      <div id="end">
+        <div id="end-bg"></div>
+        <div id="end-stripe-1"></div>
+        <div id="end-stripe-2"></div>
+        <div id="end-title"><span class="end-line">SALAM</span><span class="end-line hl">PERJUANGAN</span></div>
+        <div id="end-brand"><span id="end-brand-pill">PRISMA</span></div>
+      </div>
+    </div>
+
+    <audio id="sfx-co-mari" src="assets/sfx/impact-bass-1.mp3" data-start="1.91" data-duration="1.6" data-volume="0.45" data-track-index="20"></audio>
+    <audio id="sfx-co-cemerlang" src="assets/sfx/sparkle.mp3" data-start="11.54" data-duration="1.5" data-volume="0.35" data-track-index="21"></audio>
+    <audio id="sfx-co-hak" src="assets/sfx/impact-bass-1.mp3" data-start="13.61" data-duration="1.6" data-volume="0.45" data-track-index="22"></audio>
+    <audio id="sfx-co-kekuatan" src="assets/sfx/impact-bass-1.mp3" data-start="19.47" data-duration="1.6" data-volume="0.45" data-track-index="23"></audio>
+    <audio id="sfx-co-wadah" src="assets/sfx/whoosh-short.mp3" data-start="20.95" data-duration="0.57" data-volume="0.45" data-track-index="24"></audio>
+    <audio id="sfx-co-rakyat" src="assets/sfx/pop.mp3" data-start="23.41" data-duration="0.6" data-volume="0.4" data-track-index="25"></audio>
+    <audio id="sfx-co-khusus" src="assets/sfx/pop.mp3" data-start="25.04" data-duration="0.6" data-volume="0.4" data-track-index="26"></audio>
+    <audio id="sfx-trans-hook" src="assets/sfx/whoosh-short.mp3" data-start="2.96" data-duration="0.57" data-volume="0.45" data-track-index="27"></audio>
+    <audio id="sfx-lower-third" src="assets/sfx/pop.mp3" data-start="5.72" data-duration="0.6" data-volume="0.4" data-track-index="28"></audio>
+    <audio id="sfx-endcard-in" src="assets/sfx/whoosh-short.mp3" data-start="26.64" data-duration="0.57" data-volume="0.45" data-track-index="29"></audio>
+    <audio id="sfx-endcard-hit" src="assets/sfx/impact-bass-1.mp3" data-start="26.98" data-duration="1.6" data-volume="0.45" data-track-index="30"></audio>
+    <audio id="sfx-endcard-logo" src="assets/sfx/sparkle.mp3" data-start="27.62" data-duration="1.48" data-volume="0.35" data-track-index="31"></audio>
+
+    <script>
+      const EDIT = {"segs": [{"id": "h1", "start": 0.0, "dur": 1.98, "z0": 1.22, "z1": 1.3}, {"id": "h2", "start": 1.98, "dur": 1.14, "z0": 1.45, "z1": 1.5}, {"id": "a", "start": 3.12, "dur": 2.42, "z0": 1.0, "z1": 1.05}, {"id": "b", "start": 5.54, "dur": 2.28, "z0": 1.15, "z1": 1.18}, {"id": "c", "start": 7.82, "dur": 1.66, "z0": 1.02, "z1": 1.04}, {"id": "d", "start": 9.48, "dur": 4.0, "z0": 1.1, "z1": 1.18}, {"id": "e", "start": 13.48, "dur": 1.38, "z0": 1.32, "z1": 1.34}, {"id": "f", "start": 14.86, "dur": 1.66, "z0": 1.06, "z1": 1.08}, {"id": "g", "start": 16.52, "dur": 3.86, "z0": 1.0, "z1": 1.07}, {"id": "h", "start": 20.38, "dur": 1.58, "z0": 1.22, "z1": 1.24}, {"id": "i", "start": 21.96, "dur": 1.42, "z0": 1.06, "z1": 1.08}, {"id": "j", "start": 23.38, "dur": 1.78, "z0": 1.0, "z1": 1.03}, {"id": "k", "start": 25.16, "dur": 0.98, "z0": 1.28, "z1": 1.3}, {"id": "l", "start": 26.14, "dur": 0.76, "z0": 1.12, "z1": 1.14}], "groups": [{"start": 0.0, "end": 0.85}, {"start": 0.85, "end": 1.54}, {"start": 1.54, "end": 1.98}, {"start": 1.98, "end": 3.12}, {"start": 3.12, "end": 4.0}, {"start": 4.0, "end": 4.84}, {"start": 4.84, "end": 5.54}, {"start": 5.54, "end": 6.29}, {"start": 6.29, "end": 7.38}, {"start": 7.38, "end": 7.82}, {"start": 7.82, "end": 8.96}, {"start": 8.96, "end": 9.48}, {"start": 9.48, "end": 10.52}, {"start": 10.52, "end": 11.22}, {"start": 11.22, "end": 12.35}, {"start": 12.35, "end": 13.48}, {"start": 13.48, "end": 14.86}, {"start": 14.86, "end": 15.58}, {"start": 15.58, "end": 16.52}, {"start": 16.52, "end": 17.5}, {"start": 17.5, "end": 18.52}, {"start": 18.52, "end": 19.54}, {"start": 19.54, "end": 20.38}, {"start": 20.38, "end": 21.11}, {"start": 21.11, "end": 21.96}, {"start": 21.96, "end": 22.58}, {"start": 22.58, "end": 23.38}, {"start": 23.38, "end": 24.6}, {"start": 24.6, "end": 25.16}, {"start": 25.16, "end": 26.14}, {"start": 26.14, "end": 26.9}], "callouts": [{"id": "co-belia", "start": 0.25, "end": 1.95}, {"id": "co-mari", "start": 1.98, "end": 3.05}, {"id": "co-cemerlang", "start": 11.57, "end": 13.38}, {"id": "co-hak", "start": 13.68, "end": 14.86}, {"id": "co-kekuatan", "start": 19.54, "end": 20.38}, {"id": "co-wadah", "start": 21.11, "end": 21.96}, {"id": "co-rakyat", "start": 23.53, "end": 25.16}, {"id": "co-khusus", "start": 25.16, "end": 26.14}], "lowerThird": [5.84, 9.43], "speechEnd": 26.9, "total": 29.1};
+      const tl = gsap.timeline({ paused: true });
+
+      // Punch-in per cut: alternate framing hides the jump cuts, slow drift keeps it alive.
+      EDIT.segs.forEach((s) => {
+        tl.fromTo("#cam-" + s.id, { scale: s.z0 }, { scale: s.z1, duration: s.dur, ease: "none" }, s.start);
+      });
+
+      // Progress bar across the spoken part.
+      tl.fromTo("#progress", { scaleX: 0 }, { scaleX: 1, duration: EDIT.speechEnd, ease: "none" }, 0);
+
+      // Hook tag.
+      tl.fromTo("#tag-pill", { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "back.out(2)" }, 0.05);
+      tl.to("#tag-pill", { opacity: 0, y: -30, duration: 0.25, ease: "power2.in" }, 2.85);
+
+      // Flash transition out of the hook into the salam.
+      const hookEnd = EDIT.segs[2].start;
+      tl.fromTo("#flash", { opacity: 0 }, { opacity: 0.85, duration: 0.06 }, hookEnd - 0.06);
+      tl.to("#flash", { opacity: 0, duration: 0.3, ease: "power2.out" }, hookEnd);
+
+      // Lower third.
+      const [ltIn, ltOut] = EDIT.lowerThird;
+      tl.fromTo("#lt", { opacity: 0, x: -80 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, ltIn);
+      tl.fromTo("#lt-strip", { scaleY: 0 }, { scaleY: 1, duration: 0.35, ease: "power3.out" }, ltIn);
+      tl.fromTo("#lt-title", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, ltIn + 0.15);
+      tl.to("#lt", { opacity: 0, x: -60, duration: 0.3, ease: "power2.in" }, ltOut - 0.3);
+      tl.set("#lt", { opacity: 0, visibility: "hidden" }, ltOut);
+
+      // Keyword callouts: slam in, hold, quick exit.
+      EDIT.callouts.forEach((c) => {
+        const el = "#" + c.id;
+        tl.fromTo(el, { opacity: 0, scale: 1.6 }, { opacity: 1, scale: 1, duration: 0.22, ease: "back.out(2.2)" }, c.start);
+        tl.fromTo(el + " .co-bar", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power3.out" }, c.start + 0.08);
+        tl.to(el, { opacity: 0, y: -20, duration: 0.15, ease: "power2.in" }, c.end - 0.15);
+        tl.set(el, { opacity: 0, visibility: "hidden" }, c.end);
+      });
+
+      // Captions: one group at a time, pop in, hard kill at the end.
+      EDIT.groups.forEach((g, i) => {
+        const el = "#cg-" + i;
+        tl.fromTo(el, { opacity: 0, y: 24, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.14, ease: "back.out(1.8)" }, g.start);
+        tl.to(el, { opacity: 0, duration: 0.06 }, g.end - 0.06);
+        tl.set(el, { opacity: 0, visibility: "hidden" }, g.end);
+      });
+
+      // End card.
+      const e0 = EDIT.speechEnd - 0.15;
+      tl.fromTo("#end", { opacity: 0 }, { opacity: 1, duration: 0.2 }, e0);
+      tl.fromTo("#end-stripe-1", { xPercent: -100 }, { xPercent: 0, duration: 0.45, ease: "power3.out" }, e0);
+      tl.fromTo("#end-stripe-2", { xPercent: 100 }, { xPercent: 0, duration: 0.45, ease: "power3.out" }, e0 + 0.05);
+      tl.fromTo("#end-title", { scale: 1.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" }, e0 + 0.25);
+      tl.fromTo("#end-brand-pill", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(2)" }, e0 + 0.85);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
